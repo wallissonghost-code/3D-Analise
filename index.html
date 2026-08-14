@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0d12" />
+  <title>3D Análise</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">3D</div>
+        <div><strong>3D Análise</strong><span>Visualizador técnico de modelos</span></div>
+      </div>
+      <div class="top-actions">
+        <button id="resetCamera" class="ghost-btn" type="button">Resetar câmera</button>
+        <label class="upload-btn" for="fileInput">Abrir modelo</label>
+        <input id="fileInput" type="file" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" hidden />
+      </div>
+    </header>
+
+    <section class="workspace">
+      <aside class="panel left-panel">
+        <div class="panel-title"><span>ANÁLISE</span><small id="statusBadge">SEM MODELO</small></div>
+
+        <div id="dropZone" class="drop-zone">
+          <div class="drop-icon">⬡</div>
+          <strong>Solte seu arquivo 3D aqui</strong>
+          <span>GLB ou GLTF</span>
+          <label for="fileInput" class="mini-upload">Selecionar arquivo</label>
+        </div>
+
+        <div class="metrics">
+          <div class="metric"><span>Arquivo</span><strong id="fileName">—</strong></div>
+          <div class="metric"><span>Tamanho</span><strong id="fileSize">—</strong></div>
+          <div class="metric"><span>Meshes</span><strong id="meshCount">—</strong></div>
+          <div class="metric"><span>Triângulos</span><strong id="triangleCount">—</strong></div>
+          <div class="metric"><span>Materiais</span><strong id="materialCount">—</strong></div>
+          <div class="metric"><span>Dimensões</span><strong id="dimensions">—</strong></div>
+        </div>
+      </aside>
+
+      <section class="viewer-wrap">
+        <canvas id="viewer"></canvas>
+        <div class="viewer-overlay top-left">
+          <span class="mode-dot"></span><b>VISUALIZAÇÃO 3D</b>
+        </div>
+        <div id="emptyState" class="empty-state">
+          <div class="empty-orbit"><span></span></div>
+          <h1>Inspecione qualquer skin em 360°</h1>
+          <p>Arraste para girar • pinça/scroll para zoom • botão direito para mover</p>
+          <label for="fileInput" class="hero-upload">Carregar modelo 3D</label>
+        </div>
+        <div class="view-controls">
+          <button data-view="front">Frente</button>
+          <button data-view="back">Trás</button>
+          <button data-view="left">Esquerda</button>
+          <button data-view="right">Direita</button>
+          <button data-view="top">Topo</button>
+          <button data-view="iso">3/4</button>
+        </div>
+      </section>
+
+      <aside class="panel right-panel">
+        <div class="panel-title"><span>EXIBIÇÃO</span></div>
+
+        <div class="control-group">
+          <label>Ambiente</label>
+          <div class="segmented">
+            <button class="active" data-bg="studio">Estúdio</button>
+            <button data-bg="dark">Escuro</button>
+            <button data-bg="light">Claro</button>
+          </div>
+        </div>
+
+        <div class="control-row"><span>Grade</span><input id="gridToggle" type="checkbox" checked /></div>
+        <div class="control-row"><span>Auto rotação</span><input id="autoRotate" type="checkbox" /></div>
+        <div class="control-row"><span>Wireframe</span><input id="wireframe" type="checkbox" /></div>
+        <div class="control-row"><span>Sombras</span><input id="shadows" type="checkbox" checked /></div>
+
+        <div class="control-group range-group">
+          <div><label for="lightPower">Iluminação</label><output id="lightPowerValue">1.0×</output></div>
+          <input id="lightPower" type="range" min="0.2" max="2.2" value="1" step="0.1" />
+        </div>
+
+        <div class="hint-card">
+          <strong>Controles</strong>
+          <span>1 dedo / mouse: girar</span>
+          <span>2 dedos / scroll: zoom</span>
+          <span>botão direito: mover</span>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
