@@ -1,13 +1,13 @@
 import * as THREE from 'three';
-import { editableGeometry,faceVertices,refreshGeometry } from './geometry-utils.js';
+import { editableGeometry,faceCount,faceVertices } from './geometry-utils.js';
 
 // Triangle knife primitive. Points are expected in local mesh coordinates and on two
-// different edges of the target face. The face is replaced by three triangles.
+// different edges of the target face. The resulting geometry is re-indexed/welded.
 export function knifeFace(source,faceIndex,p1,p2){
- const g=editableGeometry(source),p=g.getAttribute('position');
- if(faceIndex<0||faceIndex>=p.count/3)return g;
+ const g=editableGeometry(source);
+ if(faceIndex<0||faceIndex>=faceCount(g))return g;
  const out=[];
- for(let f=0;f<p.count/3;f++){
+ for(let f=0;f<faceCount(g);f++){
   const tri=faceVertices(g,f);
   if(f!==faceIndex){push(out,...tri);continue}
   const e1=nearestEdge(tri,p1),e2=nearestEdge(tri,p2);
@@ -19,7 +19,7 @@ export function knifeFace(source,faceIndex,p1,p2){
   const normal=new THREE.Triangle(...tri).getNormal(new THREE.Vector3());
   emit(out,[a,q1,q2],normal);emit(out,[q1,b,c],normal);emit(out,[q1,c,q2],normal)
  }
- const next=new THREE.BufferGeometry();next.setAttribute('position',new THREE.Float32BufferAttribute(out,3));return refreshGeometry(next)
+ const next=new THREE.BufferGeometry();next.setAttribute('position',new THREE.Float32BufferAttribute(out,3));return editableGeometry(next)
 }
 export function nearestPointOnFaceEdges(source,faceIndex,point){const g=editableGeometry(source),tri=faceVertices(g,faceIndex);let best=null,d=Infinity;for(const e of [[0,1],[1,2],[2,0]]){const q=projectSegment(point,tri[e[0]],tri[e[1]]),nd=q.distanceToSquared(point);if(nd<d){d=nd;best=q}}return best}
 function nearestEdge(tri,p){let best=null,d=Infinity;for(const e of [[0,1],[1,2],[2,0]]){const q=projectSegment(p,tri[e[0]],tri[e[1]]),nd=q.distanceToSquared(p);if(nd<d){d=nd;best=e}}return best}
