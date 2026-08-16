@@ -1,0 +1,29 @@
+name: Check 3D Modeler
+
+on:
+  push:
+    paths:
+      - 'modeler.html'
+      - 'modeler.css'
+      - 'modeler/**'
+      - '.github/workflows/modeler-check.yml'
+  pull_request:
+    paths:
+      - 'modeler.html'
+      - 'modeler.css'
+      - 'modeler/**'
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          for f in modeler/*.js; do
+            echo "Checking $f"
+            node --check "$f"
+          done
