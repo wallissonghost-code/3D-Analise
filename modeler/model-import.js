@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { enhanceModelingToolbar } from './ui/modeling-toolbar.js';
 
 const MODEL_EXT=/\.(glb|gltf)$/i;
 
@@ -87,4 +88,5 @@ function normalize(v){return String(v||'').replace(/^\.\//,'').replace(/\\/g,'/'
 function baseName(v){return String(v||'').split('/').pop()||''}
 function nextFrame(){return new Promise(resolve=>requestAnimationFrame(resolve))}
 
+enhanceModelingToolbar();
 install();
