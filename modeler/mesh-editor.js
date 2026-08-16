@@ -41,7 +41,20 @@ export class MeshEditor{
  pointerSelect(e){if(this.knifeState)return this._knifeClick(e);return this.selection.pointerSelect(e)}
  clearSelection(){this.selection.clear()}
  transformStart(){if(!this.active||!this.selected.size)return;if(this.subdivision.enabled(this.mesh))this.subdivision.disable(this.mesh,{restore:true});this.dragBefore=this.mesh.geometry.clone();this.proxyStart=this.proxy.position.clone()}
- transformChange(){if(!this.active||!this.selected.size||!this.proxyStart)return;const deltaWorld=this.proxy.position.clone().sub(this.proxyStart);if(deltaWorld.lengthSq()<1e-16)return;const p=this.mesh.geometry.getAttribute('position'),selected=[...this.selected],all=new Set(selected);if(this.proportional){const centers=selected.map(i=>new THREE.Vector3().fromBufferAttribute(p,i));for(let i=0;i<p.count;i++){if(all.has(i))continue;const v=new THREE.Vector3().fromBufferAttribute(p,i);let d=Infinity;for(const c of centers)d=Math.min(d,v.distanceTo(c));if(d<this.proportionalRadius)all.add(i)}}for(const i of all){const local=new THREE.Vector3().fromBufferAttribute(p,i),world=this.mesh.localToWorld(local.clone()),weight=this.proportional&&!this.selected.has(i)?this._weight(local,p,selected):1;world.addScaledVector(deltaWorld,weight);const next=this.mesh.worldToLocal(world);applyClip(next,this.getMirror());p.setXYZ(i,next.x,next.y,next.z)}p.needsUpdate=true;refreshGeometry(this.mesh.geometry);this.selection.rebuild();this.proxyStart.copy(this.proxy.position)}
+ transformChange(){
+  if(!this.active||!this.selected.size||!this.proxyStart)return;
+  const deltaWorld=this.proxy.position.clone().sub(this.proxyStart);if(deltaWorld.lengthSq()<1e-16)return;
+  const p=this.mesh.geometry.getAttribute('position'),selected=[...this.selected],all=new Set(selected);
+  if(this.proportional){const centers=selected.map(i=>new THREE.Vector3().fromBufferAttribute(p,i));for(let i=0;i<p.count;i++){if(all.has(i))continue;const v=new THREE.Vector3().fromBufferAttribute(p,i);let d=Infinity;for(const c of centers)d=Math.min(d,v.distanceTo(c));if(d<this.proportionalRadius)all.add(i)}}
+  const baseConstraint=this.engine.modelingBase?.constraint;
+  for(const i of all){
+    const local=new THREE.Vector3().fromBufferAttribute(p,i),previousWorld=this.mesh.localToWorld(local.clone()),weight=this.proportional&&!this.selected.has(i)?this._weight(local,p,selected):1;
+    const candidateWorld=previousWorld.clone().addScaledVector(deltaWorld,weight);
+    baseConstraint?.constrainWorldPosition(candidateWorld,previousWorld);
+    const next=this.mesh.worldToLocal(candidateWorld);applyClip(next,this.getMirror());p.setXYZ(i,next.x,next.y,next.z)
+  }
+  p.needsUpdate=true;refreshGeometry(this.mesh.geometry);this.selection.rebuild();this.proxyStart.copy(this.proxy.position)
+ }
  _weight(v,p,ids){let d=Infinity;for(const i of ids)d=Math.min(d,v.distanceTo(new THREE.Vector3().fromBufferAttribute(p,i)));const t=Math.max(0,1-d/this.proportionalRadius);return t*t*(3-2*t)}
  transformEnd(){if(!this.dragBefore)return;const before=this.dragBefore,after=this.mesh.geometry.clone();this.dragBefore=null;this.onCommit(before,after,this.mesh,true,'Transform Mesh');this._updateProxy()}
  snapshot(){return this.mesh?.geometry?.clone()||null}
