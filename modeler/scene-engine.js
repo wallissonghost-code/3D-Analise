@@ -35,8 +35,10 @@ export class SceneEngine{
   onTransform(events){this.transformListeners=events||{}}
   resize(){const r=this.wrap.getBoundingClientRect(),w=Math.max(1,r.width),h=Math.max(1,r.height);this.renderer.setSize(w,h,false);this.perspective.aspect=w/h;this.perspective.updateProjectionMatrix();const span=7,aspect=w/h;this.ortho.left=-span*aspect;this.ortho.right=span*aspect;this.ortho.top=span;this.ortho.bottom=-span;this.ortho.updateProjectionMatrix()}
   setTransformMode(mode){this.transformMode=mode;this.transform.setMode(mode)}
-  attach(obj){if(obj)this.transform.attach(obj);else this.transform.detach()}
+  attach(obj){if(obj&&this._isInScene(obj))this.transform.attach(obj);else this.transform.detach()}
   detach(){this.transform.detach()}
+  _isInScene(obj){let cur=obj;while(cur){if(cur===this.scene)return true;cur=cur.parent}return false}
+  _validateTransformTarget(){if(this.transform?.object&&!this._isInScene(this.transform.object))this.transform.detach()}
   setOrtho(enabled){enabled=!!enabled;if(this.isOrtho===enabled)return;const old=this.camera,next=enabled?this.ortho:this.perspective,target=this.controls.target.clone();next.position.copy(old.position);next.quaternion.copy(old.quaternion);next.up.copy(old.up);if(enabled){const d=old.position.distanceTo(target);next.zoom=Math.max(.1,7/Math.max(.1,d));next.updateProjectionMatrix()}this.camera=next;this.isOrtho=enabled;this.controls.dispose();this.controls=this._makeOrbit(this.camera,target);this._createTransform();this.resize()}
   frameObjects(objects=[this.root],view='iso'){
     const box=new THREE.Box3();objects.filter(Boolean).forEach(o=>box.expandByObject(o));if(box.isEmpty())box.set(new THREE.Vector3(-1,-1,-1),new THREE.Vector3(1,1,1));const c=box.getCenter(new THREE.Vector3()),s=box.getSize(new THREE.Vector3()),max=Math.max(s.x,s.y,s.z,1);const dirs={front:[0,0,1],back:[0,0,-1],left:[-1,0,0],right:[1,0,0],top:[0,1,0],iso:[1,.7,1]};const d=new THREE.Vector3(...(dirs[view]||dirs.iso)).normalize();this.camera.up.set(0,view==='top'?0:1,view==='top'?-1:0);
@@ -44,7 +46,7 @@ export class SceneEngine{
   }
   screenRay(clientX,clientY){const r=this.canvas.getBoundingClientRect(),p=new THREE.Vector2((clientX-r.left)/Math.max(1,r.width)*2-1,-((clientY-r.top)/Math.max(1,r.height)*2-1));const ray=new THREE.Raycaster();ray.setFromCamera(p,this.camera);return ray}
   setGridVisible(v){this.grid.visible=!!v}
-  _loop(){if(!this._running)return;requestAnimationFrame(()=>this._loop());this.controls.update();for(const fn of this.beforeRender)fn();this.renderer.render(this.scene,this.camera)}
+  _loop(){if(!this._running)return;requestAnimationFrame(()=>this._loop());this._validateTransformTarget();this.controls.update();for(const fn of this.beforeRender)fn();this.renderer.render(this.scene,this.camera)}
 }
 
 export { THREE };
