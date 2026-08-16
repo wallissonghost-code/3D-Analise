@@ -2,11 +2,12 @@ import * as THREE from 'three';
 import { buildEdges,faceCount,faceVertexIndices,faceVertices } from '../mesh/geometry-utils.js';
 
 const NORMAL=[.62,.58,.88],HOVER=[.20,1.00,.42],SELECTED=[1.00,.56,.12];
+const BOX_DRAG_THRESHOLD=7;
 
 export class MeshSelection{
  constructor(engine,onChange=()=>{}){
   this.engine=engine;this.onChange=onChange;this.mesh=null;this.mode='vertex';this.vertices=new Set();this.edges=new Set();this.faces=new Set();this.vertexPoints=null;this.edgeLines=null;this.faceOverlay=null;
-  this.vertexPixelTolerance=13;this.hoverVertex=null;this._hoverFrame=0;this._hoverEvent=null;this._pointer=null;this._boxEl=null;
+  this.vertexPixelTolerance=13;this.hoverVertex=null;this._hoverFrame=0;this._hoverEvent=null;this._pointer=null;this._boxEl=null;this.isBoxSelecting=false;this._cancellingOrbit=false;
   this._pointerMove=e=>this._handlePointerMove(e);this._pointerUp=e=>this._handlePointerUp(e);this._pointerLeave=()=>{if(!this._pointer)this._setHover(null)};
   this.engine.canvas.addEventListener('pointermove',this._pointerMove,true);this.engine.canvas.addEventListener('pointerup',this._pointerUp,true);this.engine.canvas.addEventListener('pointercancel',this._pointerUp,true);this.engine.canvas.addEventListener('pointerleave',this._pointerLeave)
  }
@@ -25,18 +26,45 @@ export class MeshSelection{
  }
  pointerSelect(e){
   if(!this.mesh||e.button!==0)return false;
-  this._finishPointer();this._pointer={id:e.pointerId,startX:e.clientX,startY:e.clientY,x:e.clientX,y:e.clientY,dragging:false,add:e.shiftKey,remove:e.ctrlKey||e.metaKey};
-  this.engine.controls.enabled=false;try{this.engine.canvas.setPointerCapture?.(e.pointerId)}catch{}return true
+  this._finishPointer();
+  this._pointer={id:e.pointerId,startX:e.clientX,startY:e.clientY,x:e.clientX,y:e.clientY,dragging:false,add:e.shiftKey,remove:e.ctrlKey||e.metaKey,controlsWasEnabled:this.engine.controls.enabled};
+  // Deliberately leave OrbitControls untouched here. A simple click must remain a
+  // normal click and camera orbit must not be changed until the drag threshold is crossed.
+  return true
  }
  _handlePointerMove(e){
   if(!this.mesh)return;
-  if(this._pointer&&e.pointerId===this._pointer.id){const p=this._pointer;p.x=e.clientX;p.y=e.clientY;const dx=p.x-p.startX,dy=p.y-p.startY;if(!p.dragging&&dx*dx+dy*dy>=36){p.dragging=true;this._ensureBox()}if(p.dragging){this._updateBox();e.preventDefault();e.stopPropagation();return}}
+  if(this._pointer&&e.pointerId===this._pointer.id){
+    const p=this._pointer;p.x=e.clientX;p.y=e.clientY;const dx=p.x-p.startX,dy=p.y-p.startY;
+    if(!p.dragging&&dx*dx+dy*dy>=BOX_DRAG_THRESHOLD*BOX_DRAG_THRESHOLD)this._beginBoxSelection(p,e);
+    if(p.dragging){this._updateBox();e.preventDefault();e.stopImmediatePropagation();return}
+  }
   if(this.mode==='vertex')this._queueHover(e);else this._setHover(null)
  }
+ _beginBoxSelection(p,e){
+  p.dragging=true;this.isBoxSelecting=true;
+  // OrbitControls has already seen pointerdown because it owns the existing camera
+  // gesture. Cancel only that in-progress gesture when Box Select actually starts,
+  // then block subsequent pointermove events until selection is finished.
+  this._cancelOrbitGesture(p.id,e);
+  this.engine.controls.enabled=false;
+  this._ensureBox();this._updateBox()
+ }
+ _cancelOrbitGesture(pointerId,sourceEvent){
+  if(this._cancellingOrbit)return;this._cancellingOrbit=true;
+  try{
+    const ev=new PointerEvent('pointercancel',{bubbles:true,cancelable:true,pointerId,pointerType:sourceEvent?.pointerType||'mouse',isPrimary:sourceEvent?.isPrimary??true,clientX:sourceEvent?.clientX||0,clientY:sourceEvent?.clientY||0,button:0,buttons:0});
+    this.engine.canvas.dispatchEvent(ev)
+  }catch{}
+  finally{this._cancellingOrbit=false}
+ }
  _handlePointerUp(e){
+  if(this._cancellingOrbit)return;
   const p=this._pointer;if(!p||e.pointerId!==p.id)return;
   if(p.dragging)this._applyBoxSelection(p);else this._clickSelect(e,p);
-  this._finishPointer();e.preventDefault();e.stopPropagation()
+  this._finishPointer();
+  // Do not stop pointerup. OrbitControls is allowed to receive the release event so
+  // its own pointer bookkeeping remains clean for the next normal camera drag.
  }
  _clickSelect(e,p){
   const ray=this.engine.screenRay(e.clientX,e.clientY),add=p.add,remove=p.remove,multi=add||remove;
@@ -63,7 +91,11 @@ export class MeshSelection{
  }
  _ensureBox(){if(this._boxEl)return;const el=document.createElement('div');el.className='mesh-box-select';document.body.appendChild(el);this._boxEl=el}
  _updateBox(){if(!this._boxEl||!this._pointer)return;const r=normalizedRect(this._pointer.startX,this._pointer.startY,this._pointer.x,this._pointer.y);Object.assign(this._boxEl.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'})}
- _finishPointer(){if(this._pointer){try{this.engine.canvas.releasePointerCapture?.(this._pointer.id)}catch{}}this._pointer=null;this.engine.controls.enabled=true;if(this._boxEl){this._boxEl.remove();this._boxEl=null}}
+ _finishPointer(){
+  const p=this._pointer;this._pointer=null;this.isBoxSelecting=false;
+  if(p&&p.dragging)this.engine.controls.enabled=p.controlsWasEnabled!==false;
+  if(this._boxEl){this._boxEl.remove();this._boxEl=null}
+ }
  _queueHover(e){this._hoverEvent={x:e.clientX,y:e.clientY};if(this._hoverFrame)return;this._hoverFrame=requestAnimationFrame(()=>{this._hoverFrame=0;const q=this._hoverEvent;this._hoverEvent=null;if(q)this._setHover(this._nearestVertexScreen(q.x,q.y))})}
  _setHover(index){if(this.hoverVertex===index)return;this.hoverVertex=index;this.updateHighlight()}
  _nearestVertexScreen(clientX,clientY){
