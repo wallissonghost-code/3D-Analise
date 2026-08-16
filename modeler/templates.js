@@ -7,27 +7,29 @@ function mount(name,pos,type='wheel'){const g=new THREE.SphereGeometry(.09,12,8)
 function scopeFor(object){let cur=object;while(cur?.parent){if(cur.userData?.template)return cur;cur=cur.parent}return object?.parent||object}
 function findMount(scope,uuid){let found=null;scope?.traverse?.(o=>{if(!found&&o.userData?.isMount&&o.uuid===uuid)found=o});return found}
 
+function createCarBodyGeometry(){
+ const xs=[0,1.16], ys=[.42,.82,1.18], zs=[-2.10,-1.45,-.65,.35,1.25,2.10];
+ const verts=[];for(let zi=0;zi<zs.length;zi++){const z=zs[zi],nose=Math.abs(z)>1.8?.82:1,roof=Math.abs(z)<.75?1:.78;for(let yi=0;yi<ys.length;yi++){const y=ys[yi],t=yi/(ys.length-1),w=(xs[1]*(1-.18*t))*nose*roof;verts.push([0,y,z],[w,y,z])}}
+ const idx=(zi,yi,side)=>((zi*ys.length+yi)*2+side),faces=[];
+ const quad=(a,b,c,d)=>faces.push(a,b,c,a,c,d);
+ for(let zi=0;zi<zs.length-1;zi++)for(let yi=0;yi<ys.length-1;yi++){quad(idx(zi,yi,1),idx(zi+1,yi,1),idx(zi+1,yi+1,1),idx(zi,yi+1,1));quad(idx(zi,yi,0),idx(zi,yi+1,0),idx(zi+1,yi+1,0),idx(zi+1,yi,0))}
+ for(let zi=0;zi<zs.length-1;zi++){quad(idx(zi,0,0),idx(zi+1,0,0),idx(zi+1,0,1),idx(zi,0,1));quad(idx(zi,ys.length-1,0),idx(zi,ys.length-1,1),idx(zi+1,ys.length-1,1),idx(zi+1,ys.length-1,0))}
+ for(const zi of [0,zs.length-1])for(let yi=0;yi<ys.length-1;yi++)quad(idx(zi,yi,0),idx(zi,yi,1),idx(zi,yi+1,1),idx(zi,yi+1,0));
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts.flat(),3));g.setIndex(faces);g.computeVertexNormals();g.computeBoundingBox();g.computeBoundingSphere();return g
+}
+
 export function createCarTemplate(){
  const root=new THREE.Group();root.name='Carro';root.userData.template='car';root.userData.editable=true;
- const body=mesh(new THREE.BoxGeometry(2.4,.65,4.2,4,2,8),standard(0x6f2cff,.72,.24),'Carroceria','body');body.position.y=.72;root.add(body);
- const cabin=mesh(new THREE.BoxGeometry(1.95,.78,1.95,2,2,4),standard(0x202936,.18,.26),'Cabine','body');cabin.position.set(0,1.35,-.15);cabin.scale.set(.95,1,1);root.add(cabin);
- const bumperF=mesh(new THREE.BoxGeometry(2.15,.18,.25),standard(0x20242b,.6,.32),'Parachoque_Frente','body');bumperF.position.set(0,.54,2.18);root.add(bumperF);
- const bumperB=bumperF.clone();bumperB.name='Parachoque_Traseiro';bumperB.position.z=-2.18;root.add(bumperB);
+ const body=mesh(createCarBodyGeometry(),standard(0x6f2cff,.72,.24),'Carroceria_Editável','body');body.userData.mirrorRecommended='x';body.userData.topologyTemplate=true;body.userData.modelingHint='Use Face/Edge, Extrude, Inset, Loop Cut, Bevel, Mirror X e Subdivision';root.add(body);
  const positions=[[-1.23,.48,1.48],[1.23,.48,1.48],[-1.23,.48,-1.48],[1.23,.48,-1.48]];const names=['Roda_Dianteira_Esquerda','Roda_Dianteira_Direita','Roda_Traseira_Esquerda','Roda_Traseira_Direita'];positions.forEach((p,i)=>root.add(mount('Mount_'+names[i],new THREE.Vector3(...p))));
- body.userData.mirrorRecommended='x';cabin.userData.mirrorRecommended='x';return root;
+ return root;
 }
 export function createWheel(name='Roda'){const w=mesh(new THREE.CylinderGeometry(.48,.48,.34,32,2),standard(0x14171c,.05,.88),name,'wheel');w.rotation.z=Math.PI/2;w.userData.snapType='wheel';return w}
 
-export function rebuildMountOccupancy(root){
- if(!root)return 0;const mounts=new Map();root.traverse(o=>{if(o.userData?.isMount){o.userData.occupied=false;mounts.set(o.uuid,o)}});let used=0;root.traverse(o=>{if(o.userData?.isMount)return;const id=o.userData?.mountUuid;if(id&&mounts.has(id)){mounts.get(id).userData.occupied=true;used++}});return used
-}
-export function releaseMount(object,root=scopeFor(object)){
- if(!object)return false;const id=object.userData?.mountUuid;if(!id)return false;const old=findMount(root,id);if(old)old.userData.occupied=false;delete object.userData.mountUuid;delete object.userData.mountName;return true
-}
+export function rebuildMountOccupancy(root){if(!root)return 0;const mounts=new Map();root.traverse(o=>{if(o.userData?.isMount){o.userData.occupied=false;mounts.set(o.uuid,o)}});let used=0;root.traverse(o=>{if(o.userData?.isMount)return;const id=o.userData?.mountUuid;if(id&&mounts.has(id)){mounts.get(id).userData.occupied=true;used++}});return used}
+export function releaseMount(object,root=scopeFor(object)){if(!object)return false;const id=object.userData?.mountUuid;if(!id)return false;const old=findMount(root,id);if(old)old.userData.occupied=false;delete object.userData.mountUuid;delete object.userData.mountName;return true}
 export function availableMounts(root,type='wheel'){rebuildMountOccupancy(root);const out=[];root?.traverse(o=>{if(o.userData?.isMount&&o.userData.mountType===type&&!o.userData.occupied)out.push(o)});return out}
-export function snapToMount(object,mount){
- if(!object||!mount)return false;const scope=scopeFor(mount)||scopeFor(object);releaseMount(object,scope);const p=mount.getWorldPosition(new THREE.Vector3());const parent=object.parent;if(parent)parent.worldToLocal(p);object.position.copy(p);mount.userData.occupied=true;object.userData.mountUuid=mount.uuid;object.userData.mountName=mount.name;return true
-}
+export function snapToMount(object,mount){if(!object||!mount)return false;const scope=scopeFor(mount)||scopeFor(object);releaseMount(object,scope);const p=mount.getWorldPosition(new THREE.Vector3());const parent=object.parent;if(parent)parent.worldToLocal(p);object.position.copy(p);mount.userData.occupied=true;object.userData.mountUuid=mount.uuid;object.userData.mountName=mount.name;return true}
 
 export function createPersonTemplate(){
  const root=new THREE.Group();root.name='Pessoa';root.userData.template='person';root.userData.editable=true;
