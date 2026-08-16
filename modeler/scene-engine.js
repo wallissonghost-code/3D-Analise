@@ -18,6 +18,7 @@ export class SceneEngine{
     this.modelingBase=new ModelingBaseController(this);
     this.grid=this.environment.grid;this.floor=this.environment.floor;
     this.beforeRender=[];this._running=true;
+    if(typeof window!=='undefined')window.__modelerEngine=this;
     this._resizeObserver=new ResizeObserver(()=>this.resize());this._resizeObserver.observe(wrap);this.resize();this._loop();
     canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();this._running=false;window.dispatchEvent(new CustomEvent('modeler-webgl-lost'))});
     canvas.addEventListener('webglcontextrestored',()=>{this._running=true;this.resize();this._loop();window.dispatchEvent(new CustomEvent('modeler-webgl-restored'))});
