@@ -16,6 +16,15 @@ async function openPage(viewport){
 {
  const {page,errors}=await openPage({width:1440,height:900});
  assert.equal(await page.evaluate(()=>window.__modeler.objectCount()),0,'cena deve iniciar vazia');
+ assert.equal(await page.locator('.viewport-scene-controls').isVisible(),true,'controles de ambiente devem aparecer');
+ assert.deepEqual(await page.locator('.viewport-scene-controls [data-env] option').allTextContents(),['Studio','Pista','Grid'],'ambientes principais devem existir');
+ await page.selectOption('.viewport-scene-controls [data-env]','track');
+ assert.equal(await page.evaluate(()=>window.__modeler.objectCount()),0,'ambiente não pode entrar na cena do projeto');
+ await page.selectOption('.viewport-scene-controls [data-env]','studio');
+ await page.uncheck('.viewport-scene-controls [data-grid]');
+ assert.equal(await page.evaluate(()=>window.__modeler.objectCount()),0,'grid não pode entrar no projeto');
+ await page.check('.viewport-scene-controls [data-grid]');
+
  await page.click('[data-primitive="cube"]');
  assert.equal(await page.evaluate(()=>window.__modeler.objectCount()),1,'cubo deve ser criado');
  assert.equal(await page.evaluate(()=>window.__modeler.selectedName()),'Cube');
@@ -36,6 +45,8 @@ async function openPage(viewport){
 
  await page.click('#vertexModeBtn');
  assert.equal(await page.evaluate(()=>window.__modeler.meshMode()),true,'modo vértice deve abrir');
+ const canvas=page.locator('#modelerCanvas'),box=await canvas.boundingBox();
+ if(box){await page.mouse.move(box.x+box.width*.35,box.y+box.height*.35);await page.mouse.down();await page.mouse.move(box.x+box.width*.62,box.y+box.height*.62,{steps:4});assert.equal(await page.locator('.mesh-box-select').count(),1,'arraste no modo mesh deve mostrar box select');await page.mouse.up();assert.equal(await page.locator('.mesh-box-select').count(),0,'box select deve sumir ao concluir')}
  await page.click('#subdivideBtn');
  assert.equal(await page.evaluate(()=>window.__modeler.meshMode()),true,'subdivide deve manter edição ativa');
 
@@ -43,6 +54,8 @@ async function openPage(viewport){
  await page.selectOption('#templateSelect','car');
  await page.click('#createTemplateBtn');
  assert.deepEqual(await page.evaluate(()=>window.__modeler.mounts()),{total:4,used:0},'carro deve ter quatro mounts livres');
+ await page.selectOption('.viewport-scene-controls [data-env]','track');
+ assert.deepEqual(await page.evaluate(()=>window.__modeler.mounts()),{total:4,used:0},'pista não pode alterar mounts ou projeto');
  await page.click('#addWheelBtn');
  assert.deepEqual(await page.evaluate(()=>window.__modeler.mounts()),{total:4,used:1},'primeira roda deve ocupar um mount');
  await page.click('#undoBtn');
@@ -59,6 +72,7 @@ async function openPage(viewport){
  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-window.innerWidth);
  assert.ok(overflow<=2,`layout mobile não deve vazar horizontalmente: ${overflow}px`);
  assert.equal(await page.locator('.mobile-transform-toolbar').isVisible(),true,'toolbar mobile deve aparecer');
+ assert.equal(await page.locator('.viewport-scene-controls').isVisible(),true,'ambiente deve continuar acessível no mobile');
  await page.click('[data-primitive="sphere"]');
  assert.equal(await page.evaluate(()=>window.__modeler.objectCount()),1,'criação deve funcionar no viewport mobile');
  assert.deepEqual(errors,[],errors.join('\n'));
