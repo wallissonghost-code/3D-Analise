@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { ViewportEnvironment } from './viewport/environment.js';
+import { ModelingBaseController } from './features/modeling-base/controller.js';
 
 export class SceneEngine{
   constructor(canvas,wrap){
@@ -14,6 +15,7 @@ export class SceneEngine{
     this.transform=null;this.transformMode='translate';this.transformListeners={};this._createTransform();
     this.root=new THREE.Group();this.root.name='Projeto';this.root.userData.projectRoot=true;this.scene.add(this.root);
     this.environment=new ViewportEnvironment({scene:this.scene,renderer:this.renderer,wrap:this.wrap,canvas:this.canvas,getCamera:()=>this.camera});
+    this.modelingBase=new ModelingBaseController(this);
     this.grid=this.environment.grid;this.floor=this.environment.floor;
     this.beforeRender=[];this._running=true;
     this._resizeObserver=new ResizeObserver(()=>this.resize());this._resizeObserver.observe(wrap);this.resize();this._loop();
