@@ -96,8 +96,9 @@
         <section id="projectSec" class="inspector-section">
           <div class="section-title"><span>PROJETO</span><small>Local</small></div>
           <label>Nome do projeto<input id="projectName" type="text" value="Meu Projeto 3D"></label>
-          <div class="button-row"><button id="newProjectBtn">Novo</button><label class="file-like">Abrir<input id="openProjectInput" type="file" accept=".3da.json,application/json" hidden></label></div>
+          <div class="button-row"><button id="newProjectBtn">Novo</button><label class="file-like" title="Abrir projeto 3D Análise, GLB ou glTF">Abrir<input id="openProjectInput" type="file" accept=".3da.json,.glb,.gltf,.bin,application/json,model/gltf-binary,model/gltf+json,image/*" multiple hidden></label></div>
           <div class="button-row"><button id="exportGltfBtn">glTF</button><button id="exportObjBtn">OBJ</button></div>
+          <p class="section-note">GLB abre direto. Em glTF com .bin/texturas externas, selecione os arquivos juntos.</p>
         </section>
       </aside>
     </main>
@@ -109,5 +110,6 @@
   {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
   </script>
   <script type="module" src="./modeler/editor.js?v=0.2.0"></script>
+  <script type="module" src="./modeler/model-import.js?v=0.2.1"></script>
 </body>
 </html>
