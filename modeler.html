@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#080b10" />
+  <title>3D Análise — Modelador Inteligente</title>
+  <link rel="stylesheet" href="./modeler.css?v=0.1.0" />
+</head>
+<body>
+  <div class="modeler-shell">
+    <header class="modeler-topbar">
+      <div class="modeler-brand"><div class="brand-cube">3D</div><div><strong>3D Análise</strong><span>MODELADOR INTELIGENTE · ALPHA 0.1</span></div></div>
+      <nav class="top-menu" aria-label="Menu principal"><button data-menu="file">Arquivo</button><button data-menu="edit">Editar</button><button data-menu="object">Objeto</button><button data-menu="model">Modelagem</button><button data-menu="material">Materiais</button><button data-menu="view">Visualização</button></nav>
+      <div class="top-actions"><a class="soft-link" href="./index.html">← Visualizador</a><button id="saveProjectBtn" class="soft-btn">Salvar projeto</button><button id="exportGlbBtn" class="primary-btn">Exportar GLB</button></div>
+    </header>
+
+    <main class="modeler-layout">
+      <aside class="tool-panel panel-scroll">
+        <section class="tool-section">
+          <div class="section-title"><span>CRIAR</span><small>Primitivas</small></div>
+          <div class="primitive-grid">
+            <button data-primitive="cube">▣<span>Cubo</span></button><button data-primitive="sphere">●<span>Esfera</span></button><button data-primitive="cylinder">◉<span>Cilindro</span></button><button data-primitive="cone">▲<span>Cone</span></button><button data-primitive="torus">◎<span>Torus</span></button><button data-primitive="plane">▱<span>Plano</span></button>
+          </div>
+        </section>
+
+        <section class="tool-section">
+          <div class="section-title"><span>TRANSFORMAR</span><small>Gizmos</small></div>
+          <div class="segmented transform-tools"><button data-transform="translate" class="active">Mover</button><button data-transform="rotate">Rotacionar</button><button data-transform="scale">Escalar</button></div>
+          <div class="button-row"><button id="duplicateBtn">Duplicar</button><button id="instanceBtn">Instância</button></div>
+          <div class="button-row"><button id="groupBtn">Agrupar</button><button id="deleteBtn" class="danger">Excluir</button></div>
+        </section>
+
+        <section class="tool-section">
+          <div class="section-title"><span>MODELAGEM</span><small>Mesh</small></div>
+          <div class="segmented"><button id="objectModeBtn" class="active">Objeto</button><button id="vertexModeBtn">Vértice</button></div>
+          <div class="button-row"><button id="subdivideBtn">Subdivide</button><button id="mergeVerticesBtn">Merge</button></div>
+          <div class="advanced-grid">
+            <button disabled title="Próxima etapa">Extrude</button><button disabled title="Próxima etapa">Inset</button><button disabled title="Próxima etapa">Bevel</button><button disabled title="Próxima etapa">Loop Cut</button><button disabled title="Próxima etapa">Knife</button><button disabled title="Próxima etapa">Faces</button>
+          </div>
+          <p class="section-note">Na Alpha 0.1, edição direta por vértices, subdivisão e merge já estão funcionais. As operações de face entram sem quebrar esta base.</p>
+        </section>
+
+        <section class="tool-section">
+          <div class="section-title"><span>MIRROR</span><small>Simetria inteligente</small></div>
+          <div class="axis-row"><label><input id="mirrorX" type="checkbox"> X</label><label><input id="mirrorY" type="checkbox"> Y</label><label><input id="mirrorZ" type="checkbox"> Z</label></div>
+          <label class="toggle-row"><span>Clipping no centro</span><input id="mirrorClipping" type="checkbox" checked></label>
+          <label class="toggle-row"><span>Mesclar ao aplicar</span><input id="mirrorMerge" type="checkbox" checked></label>
+          <button id="applyMirrorBtn" class="wide-btn">Aplicar / tornar independente</button>
+        </section>
+
+        <section class="tool-section">
+          <div class="section-title"><span>BASE DE MODELAGEM</span><small>Templates</small></div>
+          <select id="templateSelect"><option value="object">Objeto</option><option value="car">Carro</option><option value="person">Pessoa</option><option value="robot">Robô</option><option value="furniture">Mobiliário</option></select>
+          <button id="createTemplateBtn" class="wide-btn accent">Criar base</button>
+          <button id="addWheelBtn" class="wide-btn hidden">Adicionar roda</button>
+          <label class="toggle-row"><span>Smart Snap</span><input id="smartSnap" type="checkbox" checked></label>
+        </section>
+      </aside>
+
+      <section class="viewport-panel">
+        <canvas id="modelerCanvas"></canvas>
+        <div class="viewport-badge"><span></span><b>VIEWPORT 3D</b><small id="modeStatus">MODO OBJETO</small></div>
+        <div class="viewport-toolbar"><button data-view="front">Frente</button><button data-view="back">Trás</button><button data-view="left">Esq.</button><button data-view="right">Dir.</button><button data-view="top">Topo</button><button data-view="iso" class="active">3/4</button><button id="orthoBtn">Perspectiva</button></div>
+        <div class="viewport-help">1 dedo / mouse: orbitar · 2 dedos / scroll: zoom · Shift+clique: multi-seleção</div>
+        <div id="smartSuggestion" class="smart-suggestion hidden"><div><b>✦ Sugestão inteligente</b><span id="suggestionText"></span></div><div><button id="suggestionAccept" class="primary-btn">Aplicar</button><button id="suggestionClose" class="soft-btn">Agora não</button></div></div>
+      </section>
+
+      <aside class="inspector panel-scroll">
+        <section class="inspector-section outliner-section">
+          <div class="section-title"><span>HIERARQUIA</span><small id="objectCount">0 objetos</small></div>
+          <div id="outliner" class="outliner"><div class="outliner-empty">Cena vazia</div></div>
+        </section>
+
+        <section class="inspector-section">
+          <div class="section-title"><span>OBJETO</span><small id="selectionType">Nada selecionado</small></div>
+          <label>Nome<input id="objectName" type="text" disabled></label>
+          <div class="prop-block"><b>Posição</b><div class="xyz"><label>X<input id="posX" type="number" step="0.01" disabled></label><label>Y<input id="posY" type="number" step="0.01" disabled></label><label>Z<input id="posZ" type="number" step="0.01" disabled></label></div></div>
+          <div class="prop-block"><b>Rotação</b><div class="xyz"><label>X<input id="rotX" type="number" step="1" disabled></label><label>Y<input id="rotY" type="number" step="1" disabled></label><label>Z<input id="rotZ" type="number" step="1" disabled></label></div></div>
+          <div class="prop-block"><b>Escala</b><div class="xyz"><label>X<input id="scaleX" type="number" step="0.01" disabled></label><label>Y<input id="scaleY" type="number" step="0.01" disabled></label><label>Z<input id="scaleZ" type="number" step="0.01" disabled></label></div></div>
+        </section>
+
+        <section class="inspector-section">
+          <div class="section-title"><span>MATERIAL</span><small>PBR simples</small></div>
+          <select id="materialPreset"><option value="custom">Personalizado</option><option value="metal">Metal</option><option value="plastic">Plástico</option><option value="glass">Vidro</option><option value="rubber">Borracha</option><option value="wood">Madeira</option><option value="fabric">Tecido</option><option value="carpaint">Pintura automotiva</option><option value="skin">Pele</option><option value="stone">Pedra</option></select>
+          <div class="material-color-row"><label>Cor<input id="matColor" type="color" value="#7c5cff"></label><label>Emissão<input id="matEmissive" type="color" value="#000000"></label></div>
+          <label>Metallic <output id="metallicOut">0.0</output><input id="matMetallic" type="range" min="0" max="1" step="0.05" value="0"></label>
+          <label>Roughness <output id="roughnessOut">0.5</output><input id="matRoughness" type="range" min="0" max="1" step="0.05" value="0.5"></label>
+          <label>Transparência <output id="opacityOut">1.0</output><input id="matOpacity" type="range" min="0.05" max="1" step="0.05" value="1"></label>
+          <label class="texture-label">Textura<input id="textureInput" type="file" accept="image/*"></label>
+          <button id="applyMaterialBtn" class="wide-btn">Aplicar material</button>
+        </section>
+
+        <section class="inspector-section">
+          <div class="section-title"><span>PROJETO</span><small>Local</small></div>
+          <label>Nome do projeto<input id="projectName" type="text" value="Meu Projeto 3D"></label>
+          <div class="button-row"><button id="newProjectBtn">Novo</button><label class="file-like">Abrir<input id="openProjectInput" type="file" accept=".3da.json,application/json" hidden></label></div>
+          <div class="button-row"><button id="exportGltfBtn">glTF</button><button id="exportObjBtn">OBJ</button></div>
+        </section>
+      </aside>
+    </main>
+
+    <footer class="statusbar"><span id="historyStatus">Histórico: pronto</span><span id="selectionStatus">Nenhum objeto selecionado</span><span>Ctrl+C / Ctrl+V · Ctrl+Z / Ctrl+Shift+Z · Delete</span></footer>
+  </div>
+
+  <script type="importmap">
+  {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+  </script>
+  <script type="module" src="./modeler/editor.js?v=0.1.0"></script>
+</body>
+</html>

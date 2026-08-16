@@ -1,0 +1,15 @@
+import * as THREE from 'three';
+
+const BASE_COLOR=0x7c5cff;
+function mat(color=BASE_COLOR){return new THREE.MeshStandardMaterial({color,metalness:.05,roughness:.48})}
+function prep(mesh,name,type){mesh.name=name;mesh.castShadow=true;mesh.receiveShadow=true;mesh.userData.editable=true;mesh.userData.componentType=type||'object';return mesh}
+export function createPrimitive(type,name){let g;switch(type){case'sphere':g=new THREE.SphereGeometry(1,32,20);break;case'cylinder':g=new THREE.CylinderGeometry(1,1,2,32,1);break;case'cone':g=new THREE.ConeGeometry(1,2,32,1);break;case'torus':g=new THREE.TorusGeometry(1,.32,18,48);break;case'plane':g=new THREE.PlaneGeometry(2,2,8,8);break;default:g=new THREE.BoxGeometry(2,2,2,1,1,1)}const mesh=prep(new THREE.Mesh(g,mat()),name||type[0].toUpperCase()+type.slice(1),type);if(type==='plane')mesh.rotation.x=-Math.PI/2;return mesh}
+export function deepCloneObject(obj,{instance=false}={}){const c=obj.clone(true);c.traverse((o)=>{if(o.isMesh){if(!instance)o.geometry=o.geometry.clone();if(o.material){const arr=Array.isArray(o.material)?o.material:[o.material];const cloned=instance?arr:arr.map(m=>m.clone());o.material=Array.isArray(o.material)?cloned:cloned[0]}o.castShadow=true;o.receiveShadow=true}o.userData={...o.userData}});c.name=obj.name+(instance?' Instance':' Cópia');c.userData.instanceOf=instance?obj.uuid:null;return c}
+export function traverseMeshes(obj,fn){obj?.traverse(o=>{if(o.isMesh)fn(o)})}
+export function disposeObject(obj){obj?.traverse(o=>{o.geometry?.dispose?.();const mats=o.material?(Array.isArray(o.material)?o.material:[o.material]):[];mats.forEach(m=>m?.dispose?.())})}
+
+export const MATERIAL_PRESETS={
+ metal:{color:'#aab2bd',metalness:1,roughness:.22,opacity:1},plastic:{color:'#59657a',metalness:.05,roughness:.36,opacity:1},glass:{color:'#bfe5ff',metalness:0,roughness:.08,opacity:.28,transmission:.75},rubber:{color:'#17191d',metalness:0,roughness:.88,opacity:1},wood:{color:'#7b4d2c',metalness:0,roughness:.72,opacity:1},fabric:{color:'#5f6072',metalness:0,roughness:.9,opacity:1},carpaint:{color:'#6f2cff',metalness:.78,roughness:.2,opacity:1},skin:{color:'#c98d72',metalness:0,roughness:.62,opacity:1},stone:{color:'#73777d',metalness:0,roughness:.86,opacity:1}
+};
+export function applyMaterial(obj,settings={}){traverseMeshes(obj,mesh=>{let m=mesh.material;if(Array.isArray(m))m=m[0];if(!(m?.isMeshStandardMaterial||m?.isMeshPhysicalMaterial)){m=new THREE.MeshPhysicalMaterial()}else m=m.clone();if(settings.color)m.color.set(settings.color);if(settings.emissive)m.emissive.set(settings.emissive);if(settings.metalness!=null)m.metalness=+settings.metalness;if(settings.roughness!=null)m.roughness=+settings.roughness;if(settings.opacity!=null){m.opacity=+settings.opacity;m.transparent=m.opacity<.999}if(settings.transmission!=null&&'transmission'in m){m.transmission=+settings.transmission;m.transparent=true}if(settings.map!==undefined){m.map=settings.map;m.needsUpdate=true}mesh.material=m})}
+export function materialFromObject(obj){let found=null;traverseMeshes(obj,m=>{if(!found)found=Array.isArray(m.material)?m.material[0]:m.material});return found}
