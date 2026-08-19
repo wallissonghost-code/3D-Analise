@@ -10,8 +10,11 @@ Desktop editor for modular 2D character rigs built with **Godot 4.x + GDScript**
 - Sprite part transform editing: position, rotation, scale, pivot, Z index.
 - Direct viewport selection and dragging.
 - Zoom with mouse wheel and pan with middle mouse button.
-- Bone data model and visual bones.
-- Socket data model and basic weapon/part attachment by socket name.
+- Bone hierarchy with inherited position, rotation and scale.
+- Sprite parts can be parented to bones and inherit their transforms.
+- Sockets inherit their parent bone transform.
+- Parts/weapons attached to sockets follow the socket automatically during animation.
+- Cyclic bone-parent protection in the runtime solver.
 - Animation clips: Idle, Walk, Run, Attack, Hurt, Death, Skill, Berserk.
 - Directions: Front, Back, Left, Right.
 - 1–32 frame timeline.
@@ -22,16 +25,24 @@ Desktop editor for modular 2D character rigs built with **Godot 4.x + GDScript**
 - Shortcuts: Ctrl+S, Ctrl+Z, Ctrl+Y, Space, Delete, F.
 - Modular extension points for skins, weapons, effects and exporters.
 
-## Important MVP limits
+## Current rig workflow
 
-This is the first functional pass, not the final production editor. The following are intentionally left for the next increments:
+1. Import the transparent PNG body parts.
+2. Create bones and set each bone's parent in the inspector.
+3. Parent a sprite part to the appropriate bone.
+4. Create a socket while the hand bone is selected, for example `RightHand`.
+5. Select the weapon part, type `RightHand` in Socket and use the attach action.
+6. Keyframe the arm/hand bones. Child parts and the weapon now inherit the animated hierarchy.
 
-- Bone transforms do not yet deform/drive child sprite transforms as a complete skeletal solver.
-- Socket attachment is stored and can snap a part to a socket, but full inherited transform evaluation is the next rig milestone.
-- Onion skin UI and multi-key drag selection are Priority 2.
-- Horizontal direction mirroring is Priority 2.
-- Advanced skin/equipment/effect editors are scaffolded but not yet exposed as full panels.
-- PNG sprite-sheet/frame rendering is Priority 3; JSON export architecture is already isolated.
+The rig solver evaluates local transforms into world transforms every preview frame. This keeps animation data reusable: changing the weapon PNG does not require recreating arm keyframes.
+
+## Remaining planned increments
+
+- Onion skin and multi-key drag selection.
+- Horizontal direction mirroring (Right -> Left).
+- Full skin manager and equipment library UI.
+- Effect tracks and effect preview controls.
+- Individual PNG frame and sprite-sheet rendering/export.
 - IK, mesh deformation, constraints, curves, color animation and hitboxes are future architecture targets.
 
 ## Folder layout
@@ -46,7 +57,8 @@ This is the first functional pass, not the final production editor. The followin
 │   │   ├── rig_project.gd
 │   │   └── editor_history.gd
 │   ├── rig/
-│   │   └── rig_canvas.gd
+│   │   ├── rig_canvas.gd
+│   │   └── rig_solver.gd
 │   ├── project/
 │   │   └── project_store.gd
 │   ├── skins/
@@ -87,10 +99,8 @@ MyCharacter/
 
 ## Next implementation order
 
-1. True inherited bone hierarchy and bone-driven pieces.
-2. Socket world transforms and weapon swapping without animation recreation.
-3. Onion skin.
-4. Skin manager and equipment preview.
-5. Direction mirror workflow.
-6. Effect tracks.
-7. Individual PNG and sprite-sheet renderer/exporter.
+1. Onion skin preview.
+2. Skin manager and equipment preview/library.
+3. Direction mirror workflow.
+4. Effect tracks.
+5. Individual PNG and sprite-sheet renderer/exporter.
