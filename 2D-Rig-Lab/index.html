@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0d12" />
+  <title>2D Rig Lab</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand"><b>2D RIG LAB</b><span>WEB</span></div>
+      <div class="top-actions">
+        <button data-action="new">Novo</button><button data-action="open">Abrir</button><button data-action="save">Salvar</button>
+        <label class="button primary">Importar PNG<input id="pngInput" type="file" accept="image/png" multiple hidden></label>
+        <button data-action="export">Exportar JSON</button>
+        <button data-action="undo">↶</button><button data-action="redo">↷</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="panel hierarchy-panel" data-panel="rig">
+        <div class="panel-title"><span>HIERARQUIA</span><div><button id="addBone">+ Bone</button><button id="addSocket">+ Socket</button></div></div>
+        <div id="hierarchy" class="tree"></div>
+      </aside>
+
+      <section class="center">
+        <div class="viewport-toolbar">
+          <button id="fitView">Enquadrar</button><button id="toggleGrid" class="active">Grade</button><button id="toggleBones" class="active">Bones</button><button id="toggleSockets" class="active">Sockets</button>
+          <span id="zoomLabel">100%</span>
+        </div>
+        <div id="viewportWrap" class="viewport-wrap">
+          <canvas id="viewport"></canvas>
+          <div id="emptyState" class="empty-state"><b>Importe PNGs transparentes</b><span>Monte o personagem por peças, crie bones e anime sem precisar de 32 imagens.</span></div>
+        </div>
+
+        <section class="timeline panel" data-panel="timeline">
+          <div class="timeline-controls">
+            <select id="animSelect"><option>Idle</option><option>Walk</option><option>Run</option><option>Attack</option><option>Hurt</option><option>Death</option><option>Skill</option><option>Berserk</option></select>
+            <select id="dirSelect"><option>Front</option><option>Back</option><option>Left</option><option>Right</option></select>
+            <button id="prevFrame">◀</button><button id="play">▶</button><button id="stop">■</button><button id="nextFrame">▶|</button>
+            <label>FPS <input id="fps" type="number" min="1" max="60" value="12"></label>
+            <button id="addKey" class="primary">+ Key</button><span id="frameReadout">1 / 32</span>
+          </div>
+          <div id="frames" class="frames"></div>
+        </section>
+      </section>
+
+      <aside class="panel inspector-panel" data-panel="inspector">
+        <div class="panel-title">PROPRIEDADES</div>
+        <div id="inspectorEmpty" class="muted">Selecione uma peça, bone ou socket.</div>
+        <div id="inspector" class="inspector hidden">
+          <label>Nome<input id="propName"></label>
+          <div class="grid2"><label>X<input id="propX" type="number" step="1"></label><label>Y<input id="propY" type="number" step="1"></label></div>
+          <label>Rotação<input id="propR" type="number" step="1"></label>
+          <div class="grid2"><label>Escala X<input id="propSX" type="number" step="0.01"></label><label>Escala Y<input id="propSY" type="number" step="0.01"></label></div>
+          <div class="piece-only"><div class="grid2"><label>Pivô X<input id="propPX" type="number" step="0.01"></label><label>Pivô Y<input id="propPY" type="number" step="0.01"></label></div><label>Z-index<input id="propZ" type="number"></label></div>
+          <label>Bone pai<select id="propParent"></select></label>
+          <div class="piece-only"><label>Socket<select id="propSocket"></select></label></div>
+          <button id="deleteSelected" class="danger">Excluir selecionado</button>
+        </div>
+
+        <hr>
+        <div class="panel-title">SKINS</div>
+        <div class="row"><select id="skinSelect"></select><button id="newSkin">+ Skin</button></div>
+        <label class="button wide">Trocar PNG nesta skin<input id="skinTextureInput" type="file" accept="image/png" hidden></label>
+
+        <hr>
+        <div class="panel-title">EQUIPAMENTO</div>
+        <div class="row"><select id="weaponSelect"></select><button id="equipWeapon">Equipar</button></div>
+        <label class="button wide">Registrar arma PNG<input id="weaponInput" type="file" accept="image/png" hidden></label>
+      </aside>
+    </main>
+
+    <nav class="mobile-nav">
+      <button data-mobile="rig">Rig</button><button data-mobile="viewport" class="active">Viewport</button><button data-mobile="timeline">Timeline</button><button data-mobile="inspector">Inspector</button>
+    </nav>
+
+    <input id="projectInput" type="file" accept="application/json,.json" hidden>
+    <div id="toast"></div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
