@@ -1,57 +1,6 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#090b10">
-<title>2D Rig Lab</title><link rel="stylesheet" href="styles.css">
-</head>
-<body>
-<div id="app">
-<header class="topbar">
-  <div class="brand"><b>2D RIG LAB</b><span>WEB</span></div>
-  <div class="project-actions"><button id="newProject">Novo</button><button id="openProject">Abrir</button><button id="saveProject">Salvar</button></div>
-</header>
-<nav class="steps" id="steps">
-  <button data-step="assemble" class="active"><b>1</b><span>Montar</span></button>
-  <button data-step="rig"><b>2</b><span>Rig</span></button>
-  <button data-step="animate"><b>3</b><span>Animar</span></button>
-  <button data-step="preview"><b>4</b><span>Preview</span></button>
-  <button data-step="export"><b>5</b><span>Exportar</span></button>
-</nav>
-<main>
-<section class="stage active" data-stage="assemble">
-  <aside class="sidebar">
-    <h2>Monte seu personagem</h2><p class="hint">Importe todos os PNGs de uma vez. Depois escolha o tipo de cada peça e encaixe no personagem.</p>
-    <label class="big-import">＋ Importar partes PNG<input id="pngInput" type="file" accept="image/png" multiple hidden></label>
-    <div class="quick"><button id="autoArrange">Organizar automaticamente</button><button id="centerCharacter">Centralizar personagem</button></div>
-    <div id="partsList" class="parts-list"></div>
-  </aside>
-  <section class="canvas-area">
-    <div class="canvas-toolbar"><button id="fitView">Enquadrar</button><button id="toggleGrid" class="active">Grade</button><button id="resetSelected">Reset peça</button><button id="hideSelected">Ocultar</button><span id="zoomLabel">100%</span></div>
-    <div id="viewportWrap" class="viewport-wrap"><canvas id="viewport"></canvas><div id="emptyState" class="empty"><b>Comece importando as partes</b><span>Cabeça, torso, braços, mãos, pernas, pés, arma...</span></div></div>
-  </section>
-  <aside class="properties" id="assembleProps"><h3>Peça selecionada</h3><div id="noSelection" class="hint">Toque numa peça.</div><div id="pieceProps" class="hidden"></div></aside>
-</section>
-
-<section class="stage" data-stage="rig">
-  <aside class="sidebar"><h2>Rig</h2><p class="hint">Crie o esqueleto automaticamente e ajuste as juntas se precisar.</p><button id="autoRig" class="primary wide">Criar rig automático</button><button id="clearRig" class="wide">Limpar rig</button><div id="rigTree" class="tree"></div></aside>
-  <section class="canvas-area"><div class="canvas-toolbar"><button id="rigFit">Enquadrar</button><button id="toggleBones" class="active">Bones</button><button id="addBone">+ Bone</button><button id="addSocket">+ Socket</button><span>Arraste bones no viewport</span></div><div id="rigWrap" class="viewport-wrap"><canvas id="rigCanvas"></canvas></div></section>
-  <aside class="properties"><h3>Rig selecionado</h3><div id="rigProps" class="hint">Selecione um bone/socket.</div></aside>
-</section>
-
-<section class="stage" data-stage="animate">
-  <aside class="sidebar"><h2>Animar</h2><p class="hint">Escolha uma animação, selecione um bone e crie keyframes. O sistema interpola os frames.</p><label>Animação<select id="animSelect"><option>Idle</option><option>Walk</option><option>Run</option><option>Attack</option><option>Hurt</option><option>Death</option><option>Skill</option><option>Berserk</option></select></label><label>Direção<select id="dirSelect"><option>Front</option><option>Back</option><option>Left</option><option>Right</option></select></label><button id="mirrorRightLeft">Espelhar Right → Left</button><div id="animTree" class="tree"></div></aside>
-  <section class="animate-center"><div class="canvas-toolbar"><button id="animFit">Enquadrar</button><button id="onionToggle">Onion Skin</button><button id="play">▶ Play</button><button id="stop">■ Stop</button><label>FPS <input id="fps" type="number" min="1" max="60" value="12"></label></div><div id="animWrap" class="viewport-wrap"><canvas id="animCanvas"></canvas></div><div class="timeline"><div class="timeline-head"><button id="prevFrame">◀</button><span id="frameReadout">Frame 1 / 32</span><button id="nextFrame">▶</button><button id="addKey" class="primary">+ Keyframe</button><button id="removeKey">Remover key</button></div><div id="frames" class="frames"></div></div></section>
-  <aside class="properties"><h3>Transformação</h3><div id="animProps" class="hint">Selecione um bone para animar.</div></aside>
-</section>
-
-<section class="stage" data-stage="preview">
-  <aside class="sidebar"><h2>Preview</h2><p class="hint">Veja o personagem limpo, sem bones e sem controles de edição.</p><div class="preset-buttons" id="presetButtons"></div><label>Skin<select id="skinSelect"></select></label><label>Arma<select id="weaponSelect"></select></label><button id="previewPlay" class="primary wide">▶ Reproduzir</button></aside>
-  <section class="preview-stage"><canvas id="previewCanvas"></canvas></section>
-  <aside class="properties"><h3>Visual</h3><label>Fundo<input id="bgColor" type="color" value="#11151d"></label><label><input id="previewLoop" type="checkbox" checked> Loop</label><button id="newSkin">+ Criar skin</button><label class="button wide">Trocar PNG da peça na skin<input id="skinTextureInput" type="file" accept="image/png" hidden></label><label class="button wide">Registrar arma<input id="weaponInput" type="file" accept="image/png" hidden></label></aside>
-</section>
-
-<section class="stage export-stage" data-stage="export"><div class="export-card"><h2>Exportar</h2><p>Baixe o projeto para continuar depois ou exporte os dados para integrar no jogo.</p><button id="exportProject" class="primary">Baixar projeto JSON</button><button id="exportRuntime">Exportar JSON runtime</button><div class="summary" id="projectSummary"></div></div></section>
-</main>
-<input id="projectInput" type="file" accept="application/json,.json" hidden><div id="toast"></div>
-</div><script src="app.js"></script>
-</body></html>
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#080a0f"><title>2D Rig Lab V4</title><link rel="stylesheet" href="styles.css?v=4"></head><body><div id="app"><header class="topbar"><div class="brand"><b>2D RIG LAB</b><span>V4</span></div><div class="project-actions"><button id="newProject">Novo</button><button id="openProject">Abrir</button><button id="saveProject">Salvar</button></div></header><nav class="steps" id="steps"><button data-step="assemble" class="active"><b>1</b><span>Montar</span></button><button data-step="rig"><b>2</b><span>Rig</span></button><button data-step="animate"><b>3</b><span>Animar</span></button><button data-step="preview"><b>4</b><span>Preview</span></button><button data-step="export"><b>5</b><span>Exportar</span></button></nav><main>
+<section class="stage active" data-stage="assemble"><aside class="sidebar"><h2>1. Jogue suas peças aqui</h2><p class="hint">Importe todos os PNGs. Depois arraste cada peça diretamente no personagem.</p><label class="big-import">＋ IMPORTAR PNGs<input id="pngInput" type="file" accept="image/png" multiple hidden></label><div class="quick"><button id="autoArrange">Montagem inicial</button><button id="centerCharacter">Centralizar</button></div><h3>Peças</h3><div id="partsList" class="parts-list"></div></aside><section class="canvas-area"><div class="canvas-toolbar"><button id="fitView">Enquadrar</button><button id="toggleGrid" class="active">Grade</button><button id="resetSelected">Reset</button><button id="hideSelected">👁</button><span id="zoomLabel">100%</span></div><div id="viewportWrap" class="viewport-wrap"><canvas id="viewport"></canvas><div id="emptyState" class="empty"><b>Importe as partes do personagem</b><span>Você poderá arrastar, girar e encaixar tudo direto aqui.</span></div></div><div class="floating-tools"><button data-tool="move" class="active">✥ Mover</button><button data-tool="rotate">↻ Girar</button><button data-tool="scale">⤢ Escala</button></div></section><aside class="properties"><h3>Ajuste rápido</h3><div id="noSelection" class="hint">Selecione uma peça no personagem.</div><div id="pieceProps" class="hidden"></div></aside></section>
+<section class="stage" data-stage="rig"><aside class="sidebar"><h2>2. Crie o esqueleto</h2><p class="hint">Um clique cria o rig base. Depois arraste as articulações para os lugares certos.</p><button id="autoRig" class="primary wide">⚡ CRIAR RIG AUTOMÁTICO</button><button id="clearRig" class="wide">Limpar rig</button><div id="rigTree" class="tree"></div></aside><section class="canvas-area"><div class="canvas-toolbar"><button id="rigFit">Enquadrar</button><button id="toggleBones" class="active">Bones</button><button id="addBone">+ Bone</button><button id="addSocket">+ Socket</button><span>Arraste os pontos laranja</span></div><div id="rigWrap" class="viewport-wrap"><canvas id="rigCanvas"></canvas></div></section><aside class="properties"><h3>Articulação</h3><div id="rigProps" class="hint">Toque num bone.</div></aside></section>
+<section class="stage" data-stage="animate"><aside class="sidebar"><h2>3. Anime mexendo no boneco</h2><p class="hint">Selecione um bone, mova/gire e marque um keyframe. Não precisa criar 32 imagens.</p><label>Animação<select id="animSelect"><option>Idle</option><option>Walk</option><option>Run</option><option>Attack</option><option>Hurt</option><option>Death</option><option>Skill</option><option>Berserk</option></select></label><label>Direção<select id="dirSelect"><option>Front</option><option>Back</option><option>Left</option><option>Right</option></select></label><button id="mirrorRightLeft">Espelhar Right → Left</button><div id="animTree" class="tree"></div></aside><section class="animate-center"><div class="canvas-toolbar"><button id="animFit">Enquadrar</button><button id="onionToggle">Onion</button><button id="play">▶</button><button id="stop">■</button><label>FPS <input id="fps" type="number" min="1" max="60" value="12"></label></div><div id="animWrap" class="viewport-wrap"><canvas id="animCanvas"></canvas></div><div class="timeline"><div class="timeline-head"><button id="prevFrame">◀</button><b id="frameReadout">1 / 32</b><button id="nextFrame">▶</button><button id="addKey" class="primary">◆ Key</button><button id="removeKey">Apagar</button></div><div id="frames" class="frames"></div></div></section><aside class="properties"><h3>Bone selecionado</h3><div id="animProps" class="hint">Toque num bone para editar.</div></aside></section>
+<section class="stage" data-stage="preview"><aside class="sidebar"><h2>4. Teste</h2><p class="hint">Veja o resultado sem linhas nem controles.</p><div class="preset-buttons" id="presetButtons"></div><label>Skin<select id="skinSelect"></select></label><label>Arma<select id="weaponSelect"></select></label><button id="previewPlay" class="primary wide">▶ REPRODUZIR</button></aside><section class="preview-stage"><canvas id="previewCanvas"></canvas></section><aside class="properties"><h3>Visual</h3><label>Fundo<input id="bgColor" type="color" value="#11151d"></label><label><input id="previewLoop" type="checkbox" checked> Loop</label><button id="newSkin">+ Skin</button><label class="button wide">Trocar PNG da peça<input id="skinTextureInput" type="file" accept="image/png" hidden></label><label class="button wide">+ Arma<input id="weaponInput" type="file" accept="image/png" hidden></label></aside></section>
+<section class="stage export-stage" data-stage="export"><div class="export-card"><h2>5. Exportar</h2><p>Salve para continuar depois ou exporte os dados para o jogo.</p><button id="exportProject" class="primary">Baixar projeto</button><button id="exportRuntime">JSON runtime</button><div class="summary" id="projectSummary"></div></div></section></main><input id="projectInput" type="file" accept="application/json,.json" hidden><div id="toast"></div></div><script src="app.js?v=4"></script></body></html>
