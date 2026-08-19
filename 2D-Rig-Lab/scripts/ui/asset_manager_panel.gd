@@ -5,7 +5,7 @@ const SkinManagerClass = preload("res://scripts/skins/skin_manager.gd")
 const WeaponManagerClass = preload("res://scripts/weapons/weapon_manager.gd")
 const ProjectStoreClass = preload("res://scripts/project/project_store.gd")
 
-var editor: Control
+var editor
 var skin_select: OptionButton
 var skin_name: LineEdit
 var weapon_select: OptionButton
@@ -33,33 +33,30 @@ func build_ui() -> void:
 	add_child(root)
 	var title := Label.new(); title.text = "SKINS & EQUIPAMENTOS"; root.add_child(title)
 	info = Label.new(); info.text = "Skin troca PNG sem alterar bones ou animação."; info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; root.add_child(info)
-
 	var skin_label := Label.new(); skin_label.text = "Skin ativa"; root.add_child(skin_label)
 	skin_select = OptionButton.new(); skin_select.item_selected.connect(_on_skin_selected); root.add_child(skin_select)
 	var skin_row := HBoxContainer.new(); skin_name = LineEdit.new(); skin_name.placeholder_text = "Skin_Red"; skin_name.size_flags_horizontal = Control.SIZE_EXPAND_FILL; skin_row.add_child(skin_name); var create_skin := Button.new(); create_skin.text = "+ Skin"; create_skin.pressed.connect(_create_skin); skin_row.add_child(create_skin); root.add_child(skin_row)
 	var replace_btn := Button.new(); replace_btn.text = "Trocar PNG da peça nesta skin"; replace_btn.pressed.connect(_choose_skin_texture); root.add_child(replace_btn)
 	var clear_btn := Button.new(); clear_btn.text = "Usar PNG original nesta peça"; clear_btn.pressed.connect(_clear_skin_texture); root.add_child(clear_btn)
-
 	root.add_child(HSeparator.new())
 	var weapon_label := Label.new(); weapon_label.text = "Armas"; root.add_child(weapon_label)
-	weapon_select = OptionButton.new(); weapon_select.item_selected.connect(_on_weapon_selected); root.add_child(weapon_select)
+	weapon_select = OptionButton.new(); root.add_child(weapon_select)
 	weapon_name = LineEdit.new(); weapon_name.placeholder_text = "Nome: Sword / Gun / Staff"; root.add_child(weapon_name)
 	weapon_socket = LineEdit.new(); weapon_socket.text = "RightHand"; weapon_socket.placeholder_text = "Socket: RightHand"; root.add_child(weapon_socket)
 	var weapon_row := HBoxContainer.new(); var add_weapon := Button.new(); add_weapon.text = "+ Registrar PNG"; add_weapon.pressed.connect(_choose_weapon_texture); weapon_row.add_child(add_weapon); var equip := Button.new(); equip.text = "Equipar"; equip.pressed.connect(_equip_selected); weapon_row.add_child(equip); root.add_child(weapon_row)
 	var unequip := Button.new(); unequip.text = "Desarmar"; unequip.pressed.connect(_unequip); root.add_child(unequip)
-
 	skin_dialog = FileDialog.new(); skin_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE; skin_dialog.access = FileDialog.ACCESS_FILESYSTEM; skin_dialog.filters = PackedStringArray(["*.png ; PNG Images"]); skin_dialog.file_selected.connect(_on_skin_texture_selected); add_child(skin_dialog)
 	weapon_dialog = FileDialog.new(); weapon_dialog.file_mode = FileDialog.FILE_MODE_OPEN_FILE; weapon_dialog.access = FileDialog.ACCESS_FILESYSTEM; weapon_dialog.filters = PackedStringArray(["*.png ; PNG Images"]); weapon_dialog.file_selected.connect(_on_weapon_texture_selected); add_child(weapon_dialog)
 
 func _process(_delta: float) -> void:
-	if editor == null or not "project" in editor: return
+	if editor == null: return
 	var p = editor.project
 	if p == null: return
 	var sig := "%s|%s|%d|%d" % [p.active_skin, p.equipped_weapon, p.skins.size(), p.weapons.size()]
 	if sig != _last_signature: refresh()
 
 func refresh() -> void:
-	if editor == null or not "project" in editor or editor.project == null: return
+	if editor == null or editor.project == null: return
 	var p = editor.project
 	_last_signature = "%s|%s|%d|%d" % [p.active_skin, p.equipped_weapon, p.skins.size(), p.weapons.size()]
 	skin_select.clear()
@@ -109,9 +106,6 @@ func _on_weapon_texture_selected(path: String) -> void:
 	editor.project.equipped_weapon = id
 	_status("Arma registrada e equipada: " + name); weapon_name.clear(); refresh()
 
-func _on_weapon_selected(_index: int) -> void:
-	pass
-
 func _equip_selected() -> void:
 	if weapon_select.item_count == 0: return
 	var id: String = weapon_select.get_item_metadata(weapon_select.selected)
@@ -126,4 +120,4 @@ func _project_asset_path(path: String) -> String:
 
 func _status(text: String) -> void:
 	info.text = text
-	if editor.has_method("_set_status"): editor._set_status(text)
+	if editor.has_method("_set_status"): editor.call("_set_status", text)
