@@ -15,6 +15,7 @@
         <div><strong>3D Análise</strong><span>Visualizador técnico de modelos</span></div>
       </div>
       <div class="top-actions">
+        <button id="urlImportBtn" class="ghost-btn" type="button">Abrir por URL</button>
         <button id="resetCamera" class="ghost-btn" type="button">Resetar câmera</button>
         <label class="upload-btn" for="fileInput">Abrir modelo</label>
         <input id="fileInput" type="file" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" hidden />
@@ -30,6 +31,17 @@
           <strong>Solte seu arquivo 3D aqui</strong>
           <span>GLB ou GLTF</span>
           <label for="fileInput" class="mini-upload">Selecionar arquivo</label>
+        </div>
+
+        <div class="url-import-card">
+          <strong>Importar da web</strong>
+          <span>Cole um link direto de GLB ou uma página que exponha o arquivo publicamente.</span>
+          <input id="modelUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://.../modelo.glb" />
+          <div class="url-actions">
+            <button id="openUrl" type="button">Abrir URL</button>
+            <button id="downloadUrl" type="button" class="secondary">Baixar GLB</button>
+          </div>
+          <small id="urlStatus">Links protegidos por login, token ou CORS podem não abrir.</small>
         </div>
 
         <div class="metrics">
