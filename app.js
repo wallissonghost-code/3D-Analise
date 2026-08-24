@@ -44,12 +44,15 @@ let lastBox=null;
 let lastCenter=new THREE.Vector3();
 let lastSize=new THREE.Vector3(1,1,1);
 let originalMaterials=[];
+let lastRemoteBlob=null;
+let lastRemoteName='modelo.glb';
 
 const $=s=>document.querySelector(s);
 const els={
  fileInput:$('#fileInput'),dropZone:$('#dropZone'),emptyState:$('#emptyState'),statusBadge:$('#statusBadge'),
  fileName:$('#fileName'),fileSize:$('#fileSize'),meshCount:$('#meshCount'),triangleCount:$('#triangleCount'),materialCount:$('#materialCount'),dimensions:$('#dimensions'),
- gridToggle:$('#gridToggle'),autoRotate:$('#autoRotate'),wireframe:$('#wireframe'),shadows:$('#shadows'),lightPower:$('#lightPower'),lightPowerValue:$('#lightPowerValue'),resetCamera:$('#resetCamera')
+ gridToggle:$('#gridToggle'),autoRotate:$('#autoRotate'),wireframe:$('#wireframe'),shadows:$('#shadows'),lightPower:$('#lightPower'),lightPowerValue:$('#lightPowerValue'),resetCamera:$('#resetCamera'),
+ modelUrl:$('#modelUrl'),openUrl:$('#openUrl'),downloadUrl:$('#downloadUrl'),urlStatus:$('#urlStatus'),urlImportBtn:$('#urlImportBtn')
 };
 
 function resize(){const r=viewerWrap.getBoundingClientRect();renderer.setSize(Math.max(1,r.width),Math.max(1,r.height),false);camera.aspect=r.width/Math.max(1,r.height);camera.updateProjectionMatrix()}
@@ -59,6 +62,7 @@ function humanBytes(n){if(!Number.isFinite(n))return '—';const u=['B','KB','MB
 function fmt(n){return new Intl.NumberFormat('pt-BR').format(n)}
 function disposeRoot(root){root.traverse(o=>{if(o.geometry)o.geometry.dispose?.();if(o.material){const ms=Array.isArray(o.material)?o.material:[o.material];ms.forEach(m=>{for(const k in m){const v=m[k];if(v&&v.isTexture)v.dispose?.()}m.dispose?.()})}})}
 function clearModel(){if(currentRoot){scene.remove(currentRoot);disposeRoot(currentRoot);currentRoot=null}if(currentFileUrl){URL.revokeObjectURL(currentFileUrl);currentFileUrl=null}originalMaterials=[]}
+function setUrlStatus(text,state=''){els.urlStatus.textContent=text;els.urlStatus.dataset.state=state}
 
 function analyze(root,file){let meshes=0,triangles=0;const mats=new Set();root.traverse(o=>{if(!o.isMesh)return;meshes++;o.castShadow=true;o.receiveShadow=true;const p=o.geometry?.getAttribute?.('position');const idx=o.geometry?.index;triangles+=idx?idx.count/3:(p?p.count/3:0);const list=Array.isArray(o.material)?o.material:[o.material];list.filter(Boolean).forEach(m=>mats.add(m.uuid))});
  lastBox=new THREE.Box3().setFromObject(root);lastBox.getCenter(lastCenter);lastBox.getSize(lastSize);
@@ -82,7 +86,92 @@ async function loadFile(file){
  try{
   const gltf=await loader.loadAsync(currentFileUrl);currentRoot=gltf.scene||gltf.scenes?.[0];if(!currentRoot)throw new Error('Cena 3D não encontrada');scene.add(currentRoot);
   analyze(currentRoot,file);frameModel('iso');applyWireframe();applyShadows();
- }catch(err){console.error(err);els.statusBadge.textContent='ERRO';alert(ext==='gltf'?'Este GLTF pode depender de arquivos .bin/texturas externos. Para análise local, prefira GLB, que leva tudo em um único arquivo.':'Não foi possível abrir este modelo 3D.');clearModel()}
+ }catch(err){console.error(err);els.statusBadge.textContent='ERRO';alert(ext==='gltf'?'Este GLTF pode depender de arquivos .bin/texturas externos. Para análise local, prefira GLB, que leva tudo em um único arquivo.':'Não foi possível abrir este modelo 3D.');clearModel();throw err}
+}
+
+function normalizeUrl(raw){
+ const value=(raw||'').trim();
+ if(!value)throw new Error('Cole uma URL primeiro.');
+ const url=new URL(value);
+ if(!/^https?:$/.test(url.protocol))throw new Error('Use uma URL http ou https.');
+ return url.toString();
+}
+
+function nameFromUrl(url){
+ try{const u=new URL(url);const last=decodeURIComponent(u.pathname.split('/').filter(Boolean).pop()||'modelo.glb');return last.toLowerCase().endsWith('.glb')?last:'modelo.glb'}catch{return 'modelo.glb'}
+}
+
+function extractGlbCandidates(text,baseUrl){
+ const found=new Set();
+ const decoded=text.replace(/\\u002F/g,'/').replace(/\\\//g,'/').replace(/&amp;/g,'&');
+ const patterns=[/https?:[^"'<>\s]+?\.glb(?:\?[^"'<>\s]*)?/gi,/[^"'<>\s]+?\.glb(?:\?[^"'<>\s]*)?/gi];
+ for(const re of patterns){for(const m of decoded.matchAll(re)){let candidate=m[0].replace(/[),]+$/,'');try{candidate=new URL(candidate,baseUrl).toString();found.add(candidate)}catch{}}}
+ return [...found];
+}
+
+async function fetchAsBlob(url){
+ const response=await fetch(url,{method:'GET',mode:'cors',credentials:'omit',cache:'no-store'});
+ if(!response.ok)throw new Error(`HTTP ${response.status}`);
+ return {blob:await response.blob(),contentType:(response.headers.get('content-type')||'').toLowerCase(),finalUrl:response.url||url};
+}
+
+async function resolveRemoteGlb(inputUrl){
+ const url=normalizeUrl(inputUrl);
+ setUrlStatus('Analisando URL…','loading');
+
+ if(/\.glb(?:$|[?#])/i.test(url)){
+  const direct=await fetchAsBlob(url);
+  if(direct.blob.size<20)throw new Error('O arquivo retornado está vazio ou inválido.');
+  return {blob:direct.blob,url:direct.finalUrl,name:nameFromUrl(direct.finalUrl)};
+ }
+
+ const page=await fetch(url,{method:'GET',mode:'cors',credentials:'omit',cache:'no-store'});
+ if(!page.ok)throw new Error(`A página respondeu HTTP ${page.status}`);
+ const type=(page.headers.get('content-type')||'').toLowerCase();
+ if(type.includes('model/gltf-binary')||type.includes('application/octet-stream')){
+  const blob=await page.blob();
+  return {blob,url:page.url||url,name:nameFromUrl(page.url||url)};
+ }
+
+ const text=await page.text();
+ const candidates=extractGlbCandidates(text,page.url||url);
+ if(!candidates.length)throw new Error('Nenhum link .glb público foi encontrado nessa página.');
+
+ let lastError=null;
+ for(const candidate of candidates){
+  try{
+   setUrlStatus(`Encontrado GLB. Tentando baixar…`,'loading');
+   const result=await fetchAsBlob(candidate);
+   if(result.blob.size>=20)return {blob:result.blob,url:result.finalUrl,name:nameFromUrl(result.finalUrl)};
+  }catch(err){lastError=err}
+ }
+ throw lastError||new Error('Foi encontrado um GLB, mas o servidor bloqueou o download.');
+}
+
+async function importRemoteUrl(){
+ try{
+  els.openUrl.disabled=true;els.downloadUrl.disabled=true;
+  const result=await resolveRemoteGlb(els.modelUrl.value);
+  const file=new File([result.blob],result.name,{type:result.blob.type||'model/gltf-binary'});
+  lastRemoteBlob=result.blob;lastRemoteName=result.name;
+  await loadFile(file);
+  setUrlStatus(`Pronto: ${result.name} • ${humanBytes(result.blob.size)}`,'success');
+ }catch(err){
+  console.error(err);
+  const cors=/Failed to fetch|NetworkError|Load failed/i.test(String(err?.message||err));
+  setUrlStatus(cors?'O servidor bloqueou o acesso pelo navegador (CORS). É necessário um backend/proxy autorizado para esse site.':`Não foi possível importar: ${err.message||err}`,'error');
+ }finally{els.openUrl.disabled=false;els.downloadUrl.disabled=false}
+}
+
+async function downloadRemoteUrl(){
+ try{
+  els.openUrl.disabled=true;els.downloadUrl.disabled=true;
+  let blob=lastRemoteBlob,name=lastRemoteName;
+  if(!blob){const result=await resolveRemoteGlb(els.modelUrl.value);blob=result.blob;name=result.name;lastRemoteBlob=blob;lastRemoteName=name}
+  const href=URL.createObjectURL(blob);const a=document.createElement('a');a.href=href;a.download=name||'modelo.glb';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),1500);
+  setUrlStatus(`Download iniciado: ${name}`,'success');
+ }catch(err){console.error(err);setUrlStatus(`Não foi possível baixar: ${err.message||err}`,'error')}
+ finally{els.openUrl.disabled=false;els.downloadUrl.disabled=false}
 }
 
 els.fileInput.addEventListener('change',e=>loadFile(e.target.files?.[0]));
@@ -91,6 +180,12 @@ els.fileInput.addEventListener('change',e=>loadFile(e.target.files?.[0]));
 els.dropZone.addEventListener('drop',e=>loadFile(e.dataTransfer?.files?.[0]));
 window.addEventListener('dragover',e=>e.preventDefault());
 window.addEventListener('drop',e=>{e.preventDefault();if(!els.dropZone.contains(e.target))loadFile(e.dataTransfer?.files?.[0])});
+
+els.openUrl.addEventListener('click',importRemoteUrl);
+els.downloadUrl.addEventListener('click',downloadRemoteUrl);
+els.modelUrl.addEventListener('input',()=>{lastRemoteBlob=null;setUrlStatus('Pronto para testar a URL.','')});
+els.modelUrl.addEventListener('keydown',e=>{if(e.key==='Enter')importRemoteUrl()});
+els.urlImportBtn.addEventListener('click',()=>{els.modelUrl.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>els.modelUrl.focus(),250)});
 
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>frameModel(b.dataset.view)));
 els.resetCamera.addEventListener('click',()=>frameModel('iso'));
