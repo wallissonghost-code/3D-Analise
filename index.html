@@ -2,21 +2,102 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#0b0d10" />
-  <title>Projeto Base</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#090b10" />
+  <title>GLB Viewer 3D</title>
   <link rel="stylesheet" href="styles.css" />
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.1.0/model-viewer.min.js"></script>
 </head>
 <body>
   <main class="app-shell">
-    <section class="card">
-      <span class="badge">BASE LIMPA</span>
-      <h1>Projeto pronto para começar</h1>
-      <p>Este repositório foi resetado para servir como base reutilizável para novos projetos.</p>
-      <button id="startButton" type="button">Testar base</button>
-      <p id="status" class="status" aria-live="polite"></p>
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">3D ANALISE</span>
+        <h1>GLB Viewer</h1>
+      </div>
+      <button id="openFileTop" class="primary compact" type="button">Abrir GLB</button>
+    </header>
+
+    <section class="workspace">
+      <aside class="sidebar">
+        <div id="dropZone" class="drop-zone" tabindex="0" role="button" aria-label="Selecionar arquivo GLB">
+          <div class="upload-icon">3D</div>
+          <strong>Solte seu .GLB aqui</strong>
+          <span>ou toque para selecionar</span>
+          <button id="pickFile" class="primary" type="button">Escolher arquivo</button>
+          <input id="fileInput" type="file" accept=".glb,model/gltf-binary" hidden />
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Arquivo</div>
+          <dl class="file-info">
+            <div><dt>Nome</dt><dd id="fileName">Nenhum</dd></div>
+            <div><dt>Tamanho</dt><dd id="fileSize">—</dd></div>
+            <div><dt>Formato</dt><dd id="fileType">—</dd></div>
+          </dl>
+        </div>
+
+        <div class="panel controls-panel">
+          <div class="panel-title">Visualização</div>
+          <label class="control-row">
+            <span>Rotação automática</span>
+            <input id="autoRotate" type="checkbox" checked />
+          </label>
+          <label class="control-stack">
+            <span>Velocidade <output id="speedValue">30°/s</output></span>
+            <input id="rotateSpeed" type="range" min="0" max="120" value="30" step="5" />
+          </label>
+          <label class="control-stack">
+            <span>Exposição <output id="exposureValue">1.0</output></span>
+            <input id="exposure" type="range" min="0.2" max="2.5" value="1" step="0.1" />
+          </label>
+          <label class="control-row">
+            <span>Fundo</span>
+            <input id="backgroundColor" type="color" value="#171a21" />
+          </label>
+        </div>
+      </aside>
+
+      <section class="viewer-card">
+        <div id="emptyState" class="empty-state">
+          <div class="empty-cube">◇</div>
+          <h2>Seu modelo aparecerá aqui</h2>
+          <p>Abra um arquivo GLB para inspecionar o modelo em 3D.</p>
+        </div>
+
+        <model-viewer
+          id="viewer"
+          alt="Visualizador de modelo 3D GLB"
+          camera-controls
+          touch-action="pan-y"
+          interaction-prompt="none"
+          shadow-intensity="1"
+          shadow-softness="0.8"
+          exposure="1"
+          auto-rotate
+          rotation-per-second="30deg"
+          environment-image="neutral"
+          style="display:none">
+        </model-viewer>
+
+        <div id="loading" class="loading" hidden>
+          <div class="spinner"></div>
+          <span>Carregando modelo…</span>
+        </div>
+
+        <div id="errorBox" class="error-box" hidden></div>
+
+        <div class="viewer-toolbar">
+          <button id="resetCamera" type="button" title="Centralizar câmera">Centralizar</button>
+          <button id="toggleRotate" type="button" title="Pausar ou iniciar rotação">Pausar rotação</button>
+          <button id="fullscreen" type="button" title="Tela cheia">Tela cheia</button>
+        </div>
+      </section>
     </section>
+
+    <footer>Arraste para girar • Pinça/scroll para zoom • GLB processado localmente no navegador</footer>
   </main>
+
   <script src="app.js"></script>
 </body>
 </html>
